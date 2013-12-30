@@ -153,11 +153,18 @@ public class PowerVmAllocationPolicyMigrationLocalRegression extends PowerVmAllo
 		if (utilizationHistory.length < length) 
 		{	
 			double testValue = utilizationHistory[utilizationHistory.length - 1] * 0.9;
-			/*if (testValue != 0)
+			if (testValue != 0)
 			{
 				f1();
-			}*/
-			return utilizationHistory[utilizationHistory.length - 1] * 0.9;
+				return utilizationHistory[utilizationHistory.length - 1] * 0.9;
+				
+			}
+			else
+			{
+				return 0.01;
+			}
+			
+			
 		}
 		double[] utilizationHistoryReversed = new double[length];
 		for (int i = 0; i < length; i++) {
