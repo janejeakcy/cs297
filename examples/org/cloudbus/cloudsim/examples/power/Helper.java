@@ -388,6 +388,7 @@ public class Helper {
 		    Log.printLine(String.format("VmIncreaseSort: " + BwHelper.VMIncrease));
 		    Log.printLine(String.format("HostSort: " + BwHelper.HostSort));
 		    Log.printLine(String.format("BestFitHost: " + BwHelper.BestFitHost));
+		    Log.printLine(String.format("BestFitVM: " + BwHelper.BestFitVM));
 			Log.printLine(String.format("Experiment name: " + experimentName));
 			Log.printLine(String.format("Number of hosts: " + numberOfHosts));
 			Log.printLine(String.format("Number of VMs: " + numberOfVms));

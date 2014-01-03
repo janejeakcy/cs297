@@ -133,8 +133,18 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		
 		Log.printLine("Reallocation of VMs from the over-utilized hosts:");
 		ExecutionTimeMeasurer.start("optimizeAllocationVmReallocation");
-		List<Map<String, Object>> migrationMap = getNewVmPlacement(vmsToMigrate, new HashSet<Host>(
-				overUtilizedHosts));
+		List<Map<String, Object>> migrationMap = null;
+		if (BwHelper.BestFitVM)
+		{
+			migrationMap = getNewVmPlacementBestfitVm(vmsToMigrate, new HashSet<Host>(
+					overUtilizedHosts));
+		}
+		else
+		{
+			migrationMap = getNewVmPlacement(vmsToMigrate, new HashSet<Host>(
+					overUtilizedHosts));
+		}
+		
 		getExecutionTimeHistoryVmReallocation().add(
 				ExecutionTimeMeasurer.end("optimizeAllocationVmReallocation"));
 		Log.printLine();
@@ -410,6 +420,56 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		return allocatedHost;
 	}
 	
+	public PowerHost findHostForVmLeastIncreased(Vm vm,
+			Set<? extends Host> excludedHosts)
+	{
+		double minPower = Double.MAX_VALUE;
+		PowerHost allocatedHost = null;
+		
+		if (BwHelper.HostSort)
+		{
+			sortByCpuUtilizationDecrease(this.<PowerHost> getHostList());
+		}
+
+		for (PowerHost host : this.<PowerHost> getHostList())
+		{
+			if (excludedHosts.contains(host))
+			{
+				continue;
+			}
+			if (host.isSuitableForVm(vm))
+			{
+				if (getUtilizationOfCpuMips(host) != 0
+						&& isHostOverUtilizedAfterAllocationThreshold(host, vm,
+								BwHelper.THRESHOLD))
+				{
+					continue;
+				}
+
+				try
+				{
+					double powerAfterAllocation = getPowerAfterAllocation(host,
+							vm);
+					if (powerAfterAllocation != -1)
+					{
+						double powerDiff = powerAfterAllocation
+								- host.getPower();
+						if (powerDiff < minPower)
+						{
+							minPower = powerDiff;
+							allocatedHost = host;
+						}
+					}
+				}
+				catch (Exception e)
+				{
+				}
+			}
+		}
+
+		return allocatedHost;
+	}
+	
 	/**
 	 * Sort by host cpu utilization.
 	 * 
@@ -483,7 +543,8 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		if (vm.getHost() != null) {
 			excludedHosts.add(vm.getHost());
 		}
-		return findHostForVm(vm, excludedHosts);
+		//return findHostForVm(vm, excludedHosts);
+		return findHostForVmLeastIncreased(vm, excludedHosts);
 	}
 
 	/**
@@ -569,7 +630,112 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		return migrationMap;
 	}
 	
+	
+	protected List<Map<String, Object>> getNewVmPlacementBestfitVm(
+			List<? extends Vm> vmsToMigrate, Set<? extends Host> excludedHosts)
+	{
+		List<Map<String, Object>> migrationMap = new LinkedList<Map<String, Object>>();
 
+		PowerVmList.sortByCpuUtilizationIncrease(vmsToMigrate);
+				
+		List<PowerHost> potentialHost = getUsefulHostList(vmsToMigrate, excludedHosts);
+		
+		sortByCpuUtilizationDecrease(potentialHost);
+		
+		List<Vm> migratedVm = new LinkedList<Vm>();
+		for (Vm vm : vmsToMigrate)
+		{
+			migratedVm.add(vm);
+		}
+		
+		for (PowerHost host : potentialHost)
+		{
+			int numOfMigratedVms = migratedVm.size();
+			if (numOfMigratedVms == 0)
+			{
+				break;
+			}
+			int availableUtilization = 100 - (int)(getUtilizationOfCpuMips(host) / host.getTotalMips() * 100);
+			
+			int B[][] = new int[numOfMigratedVms + 1][availableUtilization + 1];
+			Vm C[][][] = new Vm[numOfMigratedVms + 1][availableUtilization + 1][numOfMigratedVms];
+			int lengthC[][] = new int[numOfMigratedVms + 1][availableUtilization + 1];
+			for (int m = 0; m < numOfMigratedVms + 1; m++)
+			{
+				for (int n = 0; n < availableUtilization + 1; n++)
+				{
+					lengthC[m][n] = 0;
+				}
+			}
+						
+			for (int w = 0; w < availableUtilization + 1; w++)
+			{
+				B[0][w] = 0;
+			}
+			for (int i = 1; i < numOfMigratedVms + 1; i++)
+			{
+				for (int w = 0; w < availableUtilization + 1; w++)
+				{
+					int vmUtilization = (int) (migratedVm.get(i - 1).getCurrentRequestedTotalMips() / host.getTotalMips() * 100);
+					if (vmUtilization < w)
+					{
+						int prediction = getPredictAfterVmsAllocationThreshold(host, migratedVm.get(i - 1), C[i - 1][w- vmUtilization], lengthC[i - 1][w- vmUtilization], BwHelper.THRESHOLD);
+						
+						if (prediction > B[i - 1][w - vmUtilization] && prediction < 100)
+						{
+							B[i][w] = prediction;
+							C[i][w][lengthC[i][w]] = migratedVm.get(i - 1);
+							lengthC[i][w]++;
+						}
+						else
+						{
+							B[i][w] = B[i - 1][w];
+						}
+					}
+					else
+					{
+						B[i][w] = B[i - 1][w];
+					}
+				}
+			}
+						
+			for (int m = 0; m < lengthC[numOfMigratedVms][availableUtilization]; m++)
+			{
+				host.vmCreate(C[numOfMigratedVms][availableUtilization][m]);
+				Log.printLine("VM #" + C[numOfMigratedVms][availableUtilization][m].getId() + " allocated to host #"
+						+ host.getId());
+				Map<String, Object> migrate = new HashMap<String, Object>();
+				migrate.put("vm", C[numOfMigratedVms][availableUtilization][m]);
+				migrate.put("host", host);
+				migrationMap.add(migrate);
+				migratedVm.remove(C[numOfMigratedVms][availableUtilization][m]);
+			}
+		}
+		
+		return migrationMap;
+	}
+	
+	private int getPredictAfterVmsAllocationThreshold(PowerHost host, Vm newVm, Vm[] C, int lengthOfC, double threshold)
+	{
+		int predict = 0;
+		for (int i = 0; i < lengthOfC; i++)
+		{
+			if (!host.vmCreate(C[i])) 
+			{
+				break;
+			}
+		}
+		if (host.vmCreate(newVm)) 
+		{
+			predict = (int)(getPredictThreshold(host, threshold) * 100);
+			host.vmDestroy(newVm);
+		}
+		for (int i = 0; i < lengthOfC; i++)
+		{
+			host.vmDestroy(C[i]);
+		}
+		return predict;		
+	}
 	
 	protected List<Map<String, Object>> getVmMapByPSO(
             List<? extends Vm> vmsToMigrate,
