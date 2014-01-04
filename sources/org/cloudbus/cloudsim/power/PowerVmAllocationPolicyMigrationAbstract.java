@@ -136,6 +136,8 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		List<Map<String, Object>> migrationMap = null;
 		if (BwHelper.BestFitVM)
 		{
+			/*migrationMap = getNewVmPlacementBestfitVmDP(vmsToMigrate, new HashSet<Host>(
+					overUtilizedHosts));*/
 			migrationMap = getNewVmPlacementBestfitVm(vmsToMigrate, new HashSet<Host>(
 					overUtilizedHosts));
 		}
@@ -632,6 +634,84 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 	
 	
 	protected List<Map<String, Object>> getNewVmPlacementBestfitVm(
+			List<? extends Vm> vmsToMigrate, Set<? extends Host> excludedHosts)
+	{
+		List<Map<String, Object>> migrationMap = new LinkedList<Map<String, Object>>();
+
+		PowerVmList.sortByCpuUtilizationIncrease(vmsToMigrate);
+				
+		//List<PowerHost> potentialHost = getUsefulHostList(vmsToMigrate, excludedHosts);
+		List<PowerHost> potentialHost = this.<PowerHost> getHostList();
+		
+		sortByCpuUtilizationDecrease(potentialHost);
+		
+		List<Vm> migratedVm = new LinkedList<Vm>();
+		for (Vm vm : vmsToMigrate)
+		{
+			migratedVm.add(vm);
+		}
+		
+		for (PowerHost host : potentialHost)
+		{
+			double maxPredict = Double.MIN_VALUE;
+			Vm allocatedVm = null;
+			if (migratedVm.size() == 0)
+			{
+				break;
+			}
+			if (excludedHosts.contains(host))
+			{
+				continue;
+			}
+			for (Vm vm : migratedVm)
+			{
+				if (host.isSuitableForVm(vm))
+				{
+					if (getUtilizationOfCpuMips(host) != 0
+							&& isHostOverUtilizedAfterAllocationThreshold(host,
+									vm, BwHelper.THRESHOLD))
+					{
+						break;
+					}
+
+					try
+					{
+						double prediction = getPredictAfterAllocationThreshold(host, vm, BwHelper.THRESHOLD);
+						
+						if (prediction < 1)
+						{
+							if (prediction > maxPredict)
+							{
+								maxPredict = prediction;
+								allocatedVm = vm;
+							}
+						}
+					}
+					catch (Exception e)
+					{
+					}
+				}
+			}
+			if (allocatedVm != null)
+			{
+				host.vmCreate(allocatedVm);
+				Log.printLine("VM #" + allocatedVm.getId() + " allocated to host #"
+						+ host.getId());
+				Map<String, Object> migrate = new HashMap<String, Object>();
+				migrate.put("vm", allocatedVm);
+				migrate.put("host", host);
+				migrationMap.add(migrate);
+				migratedVm.remove(allocatedVm);
+				allocatedVm = null;
+				maxPredict = Double.MIN_VALUE;
+			}
+			
+		}
+				
+		return migrationMap;
+	}
+	
+	protected List<Map<String, Object>> getNewVmPlacementBestfitVmDP(
 			List<? extends Vm> vmsToMigrate, Set<? extends Host> excludedHosts)
 	{
 		List<Map<String, Object>> migrationMap = new LinkedList<Map<String, Object>>();
