@@ -498,22 +498,27 @@ public class Helper {
 	 * @param hosts the hosts
 	 * @return the sla time per active host
 	 */
-	protected static double getSlaTimePerActiveHost(List<Host> hosts) {
+	protected static double getSlaTimePerActiveHost(List<Host> hosts)
+	{
 		double slaViolationTimePerHost = 0;
 		double totalTime = 0;
 
-		for (Host _host : hosts) {
+		for (Host _host : hosts)
+		{
 			HostDynamicWorkload host = (HostDynamicWorkload) _host;
 			double previousTime = -1;
 			double previousAllocated = 0;
 			double previousRequested = 0;
 			boolean previousIsActive = true;
 
-			for (HostStateHistoryEntry entry : host.getStateHistory()) {
-				if (previousTime != -1 && previousIsActive) {
+			for (HostStateHistoryEntry entry : host.getStateHistory())
+			{
+				if (previousTime != -1 && previousIsActive)
+				{
 					double timeDiff = entry.getTime() - previousTime;
 					totalTime += timeDiff;
-					if (previousAllocated < previousRequested) {
+					if (previousAllocated < previousRequested)
+					{
 						slaViolationTimePerHost += timeDiff;
 					}
 				}
@@ -575,7 +580,8 @@ public class Helper {
 		double totalRequested = 0;
 		double totalUnderAllocatedDueToMigration = 0;
 
-		for (Vm vm : vms) {
+		for (Vm vm : vms) 
+		{
 			double vmTotalAllocated = 0;
 			double vmTotalRequested = 0;
 			double vmUnderAllocatedDueToMigration = 0;
@@ -584,15 +590,19 @@ public class Helper {
 			double previousRequested = 0;
 			boolean previousIsInMigration = false;
 
-			for (VmStateHistoryEntry entry : vm.getStateHistory()) {
-				if (previousTime != -1) {
+			for (VmStateHistoryEntry entry : vm.getStateHistory()) 
+			{
+				if (previousTime != -1) 
+				{
 					double timeDiff = entry.getTime() - previousTime;
 					vmTotalAllocated += previousAllocated * timeDiff;
 					vmTotalRequested += previousRequested * timeDiff;
 
-					if (previousAllocated < previousRequested) {
+					if (previousAllocated < previousRequested) 
+					{
 						slaViolation.add((previousRequested - previousAllocated) / previousRequested);
-						if (previousIsInMigration) {
+						if (previousIsInMigration) 
+						{
 							vmUnderAllocatedDueToMigration += (previousRequested - previousAllocated)
 									* timeDiff;
 						}

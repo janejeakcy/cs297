@@ -482,8 +482,8 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 
 			@Override
 			public int compare(PowerHost a, PowerHost b) throws ClassCastException {
-				Double aUtilization = getUtilizationOfCpuMips(a);
-				Double bUtilization = getUtilizationOfCpuMips(b);
+				Double aUtilization = getUtilizationOfCpuMips(a) / a.getTotalMips() * 100;
+				Double bUtilization = getUtilizationOfCpuMips(b) / b.getTotalMips() * 100;
 				return bUtilization.compareTo(aUtilization);
 			}
 		});
@@ -639,7 +639,8 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		List<Map<String, Object>> migrationMap = new LinkedList<Map<String, Object>>();
 
 		PowerVmList.sortByCpuUtilizationIncrease(vmsToMigrate);
-				
+			
+		
 		//List<PowerHost> potentialHost = getUsefulHostList(vmsToMigrate, excludedHosts);
 		List<PowerHost> potentialHost = this.<PowerHost> getHostList();
 		
@@ -671,7 +672,7 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 							&& isHostOverUtilizedAfterAllocationThreshold(host,
 									vm, BwHelper.THRESHOLD))
 					{
-						break;
+						continue;
 					}
 
 					try

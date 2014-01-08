@@ -34,9 +34,9 @@ public class BwHelper extends Helper
     public final static int underPSOThreshold = 1000;
     public final static double THRESHOLD = 1;
     public final static boolean VMIncrease = false;
-    public final static boolean HostSort = false;    
-    public final static boolean BestFitHost = true;
-    public final static boolean BestFitVM = true;
+    public final static boolean HostSort = true;    
+    public final static boolean BestFitHost = false;
+    public final static boolean BestFitVM = false;
     public final static boolean AllData = false;
     public static int dimension;
     public static List<Host> oldHostList;

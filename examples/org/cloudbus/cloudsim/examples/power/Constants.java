@@ -61,18 +61,18 @@ public class Constants {
 	public final static int HOST_BW		 = 1000000; // 1 Gbit/s
 	public final static int HOST_STORAGE = 1000000; // 1 GB
 
-	/*public final static PowerModel[] HOST_POWER = {
+	public final static PowerModel[] HOST_POWER = {
 		new PowerModelSpecPowerHpProLiantMl110G4Xeon3040(),
 		new PowerModelSpecPowerHpProLiantMl110G5Xeon3075()
 		
 		
-	};*/
+	};
 	
-	public final static PowerModel[] HOST_POWER = {
+	/*public final static PowerModel[] HOST_POWER = {
 		new PowerModelNoLinear(86.0, 5.0, 0.38),
 		new PowerModelNoLinear(93.0, 4.2, 0.5)
 		
 		
-	};
+	};*/
 
 }
