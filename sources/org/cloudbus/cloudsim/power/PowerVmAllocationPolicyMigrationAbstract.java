@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.cloudbus.cloudsim.examples.power.Constants;
 import org.cloudbus.cloudsim.examples.power.bandwidth.BwHelper;
 import org.cloudbus.cloudsim.examples.power.bandwidth.EnergyCalculator;
 import org.cloudbus.cloudsim.examples.power.bandwidth.EnergyFitnessFunction;
@@ -104,6 +105,10 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		ExecutionTimeMeasurer.start("optimizeAllocationTotal");
 
 		ExecutionTimeMeasurer.start("optimizeAllocationHostSelection");
+		
+		List<PowerHost> switchedOffHostsAfterUnder = getSwitchedOffHosts();
+		BwHelper.switchedOffHosts.add((Integer)switchedOffHostsAfterUnder.size());
+		
 		List<PowerHostUtilizationHistory> overUtilizedHosts = getOverUtilizedHosts();
 		getExecutionTimeHistoryHostSelection().add(
 				ExecutionTimeMeasurer.end("optimizeAllocationHostSelection"));
@@ -136,10 +141,10 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 		List<Map<String, Object>> migrationMap = null;
 		if (BwHelper.BestFitVM)
 		{
-			/*migrationMap = getNewVmPlacementBestfitVmDP(vmsToMigrate, new HashSet<Host>(
-					overUtilizedHosts));*/
-			migrationMap = getNewVmPlacementBestfitVm(vmsToMigrate, new HashSet<Host>(
+			migrationMap = getNewVmPlacementBestfitVmDP(vmsToMigrate, new HashSet<Host>(
 					overUtilizedHosts));
+			/*migrationMap = getNewVmPlacementBestfitVm(vmsToMigrate, new HashSet<Host>(
+					overUtilizedHosts));*/
 		}
 		else
 		{
@@ -147,12 +152,55 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends PowerVmAl
 					overUtilizedHosts));
 		}
 		
+		int count1 = 0;
+		int count2 = 0;
+		List<PowerHost> targetHostList = new ArrayList<PowerHost>();
+		if (migrationMap != null) 
+		{
+			for (Map<String, Object> migrate : migrationMap) 
+			{
+				PowerHost targetHost = (PowerHost) migrate.get("host");
+				if (!targetHostList.contains(targetHost))
+				{
+					targetHostList.add(targetHost);
+				}				
+			}
+		}
+		for (PowerHost host : targetHostList)
+		{
+			
+			if (switchedOffHostsAfterUnder.contains(host))
+			{
+				if (host.getId() % Constants.HOST_TYPES == 0)
+				{
+					count1++;
+				}
+				else
+				{
+					count2++;
+				}
+				
+			}
+		}
+		BwHelper.countOfRebootTypeOneHosts.add((Integer)count1);
+		System.out.println("number of rebooted type one hosts: " + count1);
+		
+		BwHelper.countOfRebootTypeTwoHosts.add((Integer)count2);
+		System.out.println("number of rebooted type two hosts: " + count2);
+		
+		BwHelper.totalNumberOfRebootedTypeOneHosts += count1;
+		BwHelper.totalNumberOfRebootedTypeTwoHosts += count2;
+		
 		getExecutionTimeHistoryVmReallocation().add(
 				ExecutionTimeMeasurer.end("optimizeAllocationVmReallocation"));
 		Log.printLine();
-
+				
+		
+		//int countOfRebootHosts = countOfSwitchedOffHostsAfterLastUnder - countOfSwitchedOffHostsAfterOver;
+		
 		migrationMap.addAll(getMigrationMapFromUnderUtilizedHosts(overUtilizedHosts));
 
+		
 		restoreAllocation();
 
 		getExecutionTimeHistoryTotal().add(ExecutionTimeMeasurer.end("optimizeAllocationTotal"));

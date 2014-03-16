@@ -29,13 +29,13 @@ public class BwHelper extends Helper
     public final static boolean writeFile = true;
     public final static String outputMigrationFileName = "migrationResult.txt";
     public static BufferedWriter outputMigrationFile = null; 
-    public final static int simlationTime = 20;
+    public final static int simlationTime = 10;
     public final static int overPSOThreshold = 1000;
     public final static int underPSOThreshold = 1000;
     public final static double THRESHOLD = 1;
     public final static boolean VMIncrease = false;
     public final static boolean HostSort = true;    
-    public final static boolean BestFitHost = false;
+    public final static boolean BestFitHost = true;
     public final static boolean BestFitVM = false;
     public final static boolean AllData = false;
     public static int dimension;
@@ -45,7 +45,14 @@ public class BwHelper extends Helper
     public final static double HIGH_BW = 140000000;
     public final static double LOW_POWER = 4000;
     public final static double HIGH_POWER = 6000;
-    
+    public static int totalNumberOfRebootedTypeOneHosts = 0;
+    public static int totalNumberOfRebootedTypeTwoHosts = 0;
+    public static ArrayList<Integer> countOfRebootTypeOneHosts;
+    public static ArrayList<Integer> countOfRebootTypeTwoHosts;
+    public static final double rebootedTypeOnePower = 0.000425;  //(102watts*30sec/2)
+    public static final double rebootedTypeTwoPower = 0.000483;  //(116watts*30sec/2)
+    public static ArrayList<Integer> switchedOffHosts;
+        
 	
 	private static void createBWList(int hostsNumber)
 	{

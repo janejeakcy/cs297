@@ -39,6 +39,7 @@ import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 import org.cloudbus.cloudsim.util.MathUtil;
 
+
 /**
  * The Class Helper.
  * 
@@ -108,6 +109,9 @@ public class Helper {
 					new VmSchedulerTimeSharedOverSubscription(peList),
 					Constants.HOST_POWER[hostType]));
 		}
+		
+		
+		
 		return hostList;
 	}
 
@@ -154,6 +158,10 @@ public class Helper {
 		double costPerStorage = 0.001; // the cost of using storage in this resource
 		double costPerBw = 0.0; // the cost of using bw in this resource
 
+		BwHelper.countOfRebootTypeOneHosts = new ArrayList<Integer>();
+		BwHelper.countOfRebootTypeTwoHosts = new ArrayList<Integer>();
+		BwHelper.switchedOffHosts = new ArrayList<Integer>();
+		
 		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
 				arch,
 				os,
@@ -395,6 +403,28 @@ public class Helper {
 			Log.printLine(String.format("Total simulation time: %.2f sec", totalSimulationTime));
 			Log.printLine(String.format("Energy consumption: %.2f kWh", energy));
 			Log.printLine(String.format("Transmission energy consumption: %.2f kWh", BwHelper.totalTransmisionEnergy));
+			Log.printLine(String.format("Total number of rebooted type one servers: %d", BwHelper.totalNumberOfRebootedTypeOneHosts));
+			Log.printLine(String.format("Total number of rebooted type two servers: %d", BwHelper.totalNumberOfRebootedTypeTwoHosts));
+			Log.printLine(String.format("Total rebooted type one server energy consumption: %.10f kWh", BwHelper.rebootedTypeOnePower * BwHelper.totalNumberOfRebootedTypeOneHosts)); 
+			Log.printLine(String.format("Total rebooted type two server energy consumption: %.10f kWh", BwHelper.rebootedTypeTwoPower * BwHelper.totalNumberOfRebootedTypeTwoHosts)); 
+			System.out.print("Number of switched off servers: ");
+			for (Integer count: BwHelper.switchedOffHosts)
+			{
+				System.out.print("" + count + ", ");
+			}
+			System.out.println("");
+			System.out.print("Number of rebooted type one servers: ");
+			for (Integer count: BwHelper.countOfRebootTypeOneHosts)
+			{
+				System.out.print("" + count + ", ");
+			}
+			System.out.println("");
+			System.out.print("Number of rebooted type two servers: ");
+			for (Integer count: BwHelper.countOfRebootTypeTwoHosts)
+			{
+				System.out.print("" + count + ", ");
+			}
+			System.out.println("");
 			Log.printLine(String.format("Number of VM migrations: %d", numberOfMigrations));
 			Log.printLine(String.format("SLA: %.10f%%", sla * 100));
 			Log.printLine(String.format(
